@@ -1,0 +1,23 @@
+{
+	"ProjectName": "ReactSeniorDesignPlayground",
+	"ProjectPath": "/Users/Phi/Documents/GitHub/ReactSeniorDesignPlayground",
+	"SourceDir": "src",
+	"DistributionDir": "build",
+	"BuildCommand": "npm start",
+	"StartCommand": "npm run-script start",
+	"InitializationTime": "2018-02-08-21-17-31",
+	"LastConfigurationTime": "2018-02-08-21-17-59",
+	"LastNPMInstallTime": "2018-02-08-21-30-30",
+	"FrontendLastBuildTime": "",
+	"LastPublishTime": "",
+	"BackendFormat": "yml",
+	"BackendLastSyncTime": "2018-02-08-21-31-26",
+	"BackendLastBuildTime": "",
+	"BackendLastPushTime": "",
+	"BackendLastPushSuccessful": false,
+	"BackendProjectID": "6f49df37-0d5a-11e8-bd06-07291c3f3a84",
+	"BackendProjectName": "ReactSeniorDesignPlayground-2018-02-08-21-31-07",
+	"BackendProjectConsoleUrl": "https://console.aws.amazon.com/mobilehub/home#/6f49df37-0d5a-11e8-bd06-07291c3f3a84/build",
+	"BackendProjectCreationTime": "2018-02-09T05:31:10.137Z",
+	"BackendProjectLastUpdatedTime": "2018-02-09T05:31:10.137Z"
+}
