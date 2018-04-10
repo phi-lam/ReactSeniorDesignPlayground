@@ -1,20 +1,19 @@
 import React from 'react';
-import { ActivityIndicator, Alert, AsyncStorage, Button, DatePickerIOS, ListView,
-	 		SectionList, StyleSheet, Text, View
+import { ActivityIndicator, Alert, AsyncStorage, Button, DatePickerIOS,
+			FlatList, ListView,
+	 		Platform, SectionList, StyleSheet, Text, View
 } from 'react-native';
-
 import {
   StackNavigator,
 } from 'react-navigation';
 
-import DatePicker from 'react-native-datepicker'
+import { List, ListItem } from "react-native-elements";
+import DatePicker from 'react-native-datepicker';
+import store from 'react-native-simple-store';
 
 /* TODO:
- *		- after calling logIn(), save the userID value.
- * 		- send userID in POST requests
- *			- pass userID as parameter between components?
- *			- async storage of User data instead of passing around components as param
- *			- ensure userid is initialized (logged in) before allowing access to Home
+ *		- ensure userid is initialized (logged in) before allowing access to Home
+ *		- put dates as headers like in iStudiez assignments
  */
 
  /* TODO: Security
@@ -41,10 +40,15 @@ async function logIn() {
 
 	AsyncStorage.setItem('USERID', responseJson.id);
 	AsyncStorage.setItem('FBTOKEN', JSON.stringify(token));
+	store.save('USERID', responseJson.id);
+	store.save('FBTOKEN', JSON.stringify(token));
 
-	const userid = await AsyncStorage.getItem('USERID');
-	console.log('logIn() - AsyncStorage USERID: ', userid);
-	return userid;
+	//const userid = await AsyncStorage.getItem('USERID');
+	const userid = store.get('USERID')
+	.then((res) =>
+		console.log('logIn() - simple-store USERID: ', res)
+	)
+	return store.get('USERID');
   }
 }
 
@@ -69,8 +73,15 @@ class LoginScreen extends React.Component {
 						}}
 						title="Login"
 						onPress={() => {
-							let loginID = logIn();
-							this.setState({userid: loginID})
+							logIn()
+							.then((loginID) => {
+								console.log('loginID - ', loginID)
+								this.setState({
+									userid: loginID,
+									isLoggedIn: true,
+								})
+							})
+
 						} }
 					/>
 					<Button
@@ -79,10 +90,13 @@ class LoginScreen extends React.Component {
 					  }}
 					  title="Go To Home"
 					  onPress={() =>
-						navigate('Home', {
-							userid: this.state.userid
-						})
-					}
+						store.get('USERID')
+						.then((loginID) =>
+							navigate('Home', {
+								userid: loginID
+							})
+						)
+					  }
 					/>
 				</View>
 			</View>
@@ -101,6 +115,15 @@ class HomeScreen extends React.Component {
 		  isLoggedIn: 1,
 		  userid: this.props.navigation.params
 	  };
+  }
+
+  componentDidMount() {
+	  store.get('USERID')
+	  .then((loginID) => {
+	  		this.setState({
+		  		userid: loginID
+	  		})
+		})
   }
 
   render() {
@@ -134,8 +157,6 @@ class HomeScreen extends React.Component {
 			</View>
 			<View style={styles.container}>
 				<Text>Click the button above to add availabilities!</Text>
-				<Text>Changes you make will automatically reload.</Text>
-				<Text>Shake your phone to open the developer menu.</Text>
 			</View>
 		</View>
 
@@ -153,43 +174,87 @@ class MatchesScreen extends React.Component {
 		super(props);
 		this.state = {
 			isLoading: true,
-			userid: this.props.navigation.state.params
+			userid: '',
 		}
 	}
 
-	GetItem (fruit_name) {
-  		Alert.alert(fruit_name);
-  	}
+	state = {
+		isLoading: true
+	};
+
+	ListViewItemSeparator = () => {
+		return (
+			<View
+				style={{
+					height: .5,
+					width: "100%",
+					backgroundColor: "#000",
+				}}
+			/>
+		);
+	}
+
+	GetItem(match) {
+		Alert.alert(match);
+	}
 
 
-	componentDidMount() {
+	async componentDidMount() {
+		/* Create form data, then add to body of POST request */
 
-		/* Dummy fetch request
-		return fetch('https://reactnativecode.000webhostapp.com/FruitsList.php')
-			.then((response) => response.json())
-			.then((responseJson) => {
-				let ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
-				this.setState({
-					isLoading: false,
-					dataSource: ds.cloneWithRows(responseJson),
-				}, function() {
-					//do something with new state
-				});
-			})
-			.catch((error) => {
-				console.error(error);
-			}); */
+		let userid = await store.get('USERID')
+		console.log('See Matches - userid', userid)
+		let formData = new FormData();
+		let dummy_pw = 'password';
+		let dummy_user = 'Phi';
+		formData.append('userid', userid)
 
-		/* ACTUAL GET REQUEST */
-		const encodedUserID = encodeURIComponent(this.state.userid);
-		return fetch(`http://students.engr.scu.edu/~bbutton/SDW/retrievematches=${encodeduUserID}.php`)
-			.then((response) => response)
+		//console.log('formData - ', formData);
+		//console.log('Retrieve matches -', userid);
+		return fetch(`http://students.engr.scu.edu/~bbutton/SDW/retrievematches.php`, {
+			method: 'POST',
+			headers: new Headers({
+					   'Content-Type': 'application/x-www-form-urlencoded', // <-- Specifying the Content-Type
+			  }),
+			body: formData
+		})
+			//.then((response) => response)
 			.then((responseJson) => {
 				console.log(responseJson);
+				this.setState({
+					isLoading: false,
+					dataSource: responseJson._bodyText,
+				});
+				Alert.alert(responseJson._bodyText);
+				console.log(responseJson._bodyText);
 			})
 			.catch((error) => {
 				console.error(error);
 			});
+
+		/* Dummy API GET Call */
+		// return fetch(`https://reqres.in/api/users?page=2`)
+		// 	.then((response) => response.json())
+		// 	.then((responseJson) => {
+		// 		console.log(responseJson);
+		// 		this.setState({
+		// 			isLoading: false,
+		// 			dataSource: responseJson.data,
+		// 		});
+		// 		//Alert.alert(responseJson.data);
+		// 		console.log(responseJson.data);
+		// 	})
+		// 	.catch((error) => {
+		// 		console.error(error);
+		// 	});
+
+		AsyncStorage.setItem('MATCHES', responseJson._bodyText);
+		store.save('MATCHES', responseJson._bodyText);
+
+		/*store.save('MATCHES', responseJson._bodyText)
+		.then((matches) => {
+			this.setState({ isLoading: false});
+		});*/
 	}
 
 	/* Set Sectionheaders based on dates
@@ -199,6 +264,9 @@ class MatchesScreen extends React.Component {
 		])
 	}*/
 
+	/*###################################################################*/
+
+
 	render() {
 		if (this.state.isLoading) {
 			return (
@@ -207,22 +275,28 @@ class MatchesScreen extends React.Component {
 				</View>
 			);
 		}
+
+		console.log("source data for FlatList - ", this.state.dataSource);
+
 		return (
-			<View style={styles.MainContainer}>
-
-			  <ListView
-
-				dataSource={this.state.dataSource}
-
-				renderSeparator= {this.ListViewItemSeparator}
-
-				renderRow={(rowData) => <Text style={styles.rowViewContainer}
-				onPress={this.GetItem.bind(this, rowData.fruit_name)} >{rowData.fruit_name}</Text>}
-
-			  />
-
+			<View>
+				<FlatList
+					data = {this.state.dataSource}
+					renderItem={({item}) => <Text> {item} </Text>}
+					keyExtractor= { (item, index) => index}
+				/>
 			</View>
 		);
+		/* DUMMY RENDER */
+		// return (
+		// 	<View>
+		// 		<FlatList
+		// 			data = {this.state.dataSource}
+		// 			renderItem={({item}) => <Text> {item.first_name} </Text>}
+		// 			keyExtractor= { (item, index) => index}
+		// 		/>
+		// 	</View>
+		// );
 	}
 }
 
@@ -238,7 +312,6 @@ class ProfileScreen extends React.Component {
 			date: "",
 			time1: "",
 			time2: "",
-			userid: this.props.navigation.state.params
 		};
 	}
 
@@ -271,31 +344,45 @@ class ProfileScreen extends React.Component {
 			  }) // <-- Post parameters */
 
 		/* Actual POST request */
-			const userid = await AsyncStorage.getItem('USERID');
+		/* Create form data, then add to body of POST request */
+			const userid = await store.get('USERID');	//DON'T CHANGE THIS
 			console.log('postAvailability() - userid: ', userid);
-			fetch('http://students.engr.scu.edu/~bbutton/SDW/saveclickdata.php', {
-				method: 'POST',
-				headers: new Headers({
-						   'Content-Type': 'application/x-www-form-urlencoded', // <-- Specifying the Content-Type
-				  }),
-				body: JSON.stringify({
-					user: [
-						{ fb_ID: userid }
+			let formData = new FormData();
+			let dummy_pw = 'password';
+			let dummy_user = 'Phi';
+			let matchreqdata = JSON.stringify({
+				user: [
+						{
+							fb_ID: userid,
+							pw: dummy_pw,
+							userName: dummy_user
+						}
 					],
-					freeblock: [
+				freeblock: [
 						{
 							user_ID: userid,
 							startTime: this.state.time1,
 							endTime: this.state.time2
 						}
 					]
+				});
+			formData.append('entrytype', matchreqdata)
+			console.log('formData - ', formData);
+
+			/* POST request to save free block */
+			fetch('http://students.engr.scu.edu/~bbutton/SDW/saveclickdata.php', {
+				method: 'POST',
+				headers: new Headers({
+					'Content-Type': 'application/x-www-form-urlencoded', // <-- Specifying the Content-Type
+				  }),
+				body: formData
 					/* TODO: blacklist and friend list
 					blacklist: [
 					]
 					friend: [
 					]
 				}) // <-- Post parameters */
-				})
+
 			})
 			.then((response) => response.text())
 			.then((responseText) => {
@@ -346,7 +433,7 @@ class ProfileScreen extends React.Component {
 				  style={{width: 300}}
 				  date={this.state.time1}
 				  mode="datetime"
-				  format="YYYY-MM-DD HH:mm"
+				  format="YYYY-MM-DD HH:mm:ss"
 				  confirmBtnText="Confirm"
 				  cancelBtnText="Cancel"
 				  customStyles={{
@@ -367,7 +454,7 @@ class ProfileScreen extends React.Component {
 				  style={{width: 300}}
 				  date={this.state.time2}
 				  mode="datetime"
-				  format="YYYY-MM-DD HH:mm"
+				  format="YYYY-MM-DD HH:mm:ss"
 				  confirmBtnText="Confirm"
 				  cancelBtnText="Cancel"
 				  customStyles={{
@@ -444,18 +531,88 @@ const styles = StyleSheet.create({
 	justifyContent: 'center'
   },
 
-  MainContainer: {
-		  // Setting up View inside content in Vertically center.
-		justifyContent: 'center',
-		flex:1,
-		margin: 10
+  MainContainer :{
 
-		},
+  // Setting up View inside content in Vertically center.
+  justifyContent: 'center',
+  flex:1,
+  paddingTop: (Platform.OS === 'ios') ? 20 : 0,
+  backgroundColor: '#00BCD4',
+  padding: 5,
+
+  },
 
  rowViewContainer: {
         fontSize: 20,
         paddingRight: 10,
         paddingTop: 10,
         paddingBottom: 10,
-      }
+
+		},
+	title: {
+    backgroundColor: '#0f1b29',
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    padding: 10,
+    paddingTop: 40,
+    textAlign: 'center',
+  },
+  row: {
+    borderColor: '#f1f1f1',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    marginLeft: 10,
+    marginRight: 10,
+    paddingTop: 20,
+    paddingBottom: 20,
+  },
+  iconContainer: {
+    alignItems: 'center',
+    backgroundColor: '#feb401',
+    borderColor: '#feaf12',
+    borderRadius: 25,
+    borderWidth: 1,
+    justifyContent: 'center',
+    height: 50,
+    width: 50,
+  },
+  icon: {
+    tintColor: '#fff',
+    height: 22,
+    width: 22,
+  },
+  info: {
+    flex: 1,
+    paddingLeft: 25,
+    paddingRight: 25,
+  },
+  items: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  address: {
+    color: '#ccc',
+    fontSize: 14,
+  },
+  total: {
+    width: 80,
+  },
+  date: {
+    fontSize: 12,
+    marginBottom: 5,
+  },
+  price: {
+    color: '#1cad61',
+    fontSize: 25,
+    fontWeight: 'bold',
+  },
 });
+
+
+/* TODO (done):
+ *		- after calling logIn(), save the userID value.
+ * 		- send userID in POST requests
+ *			- pass userID as parameter between components?
+ *			- async storage of User data instead of passing around components as param */
