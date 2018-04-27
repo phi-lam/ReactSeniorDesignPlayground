@@ -12,12 +12,6 @@ import DatePicker from 'react-native-datepicker';
 import store from 'react-native-simple-store';
 import { Calendar, CalendarList, Agenda } from 'react-native-calendars';
 
-/* TODO Apr 26:
- *	- When asking for freeblocks for home screen, need server to give me:
- *			- "committed" flag: is the free block committed? 0 or 1
- *			- "matched_friends": array of friend names for which match exists
- */
-
 /* Frontend TODO:
  * - scale the block height-wise to intuitively convey how much time it takes up
  * 		-
@@ -157,48 +151,17 @@ class HomeScreen extends React.Component {
 				// console.log("-----------")
 				console.log(parsed_response)
 
-				/* TODO Apr 26:
-				 *	- When asking for freeblocks for home screen, need server to give me:
-				 *			- "committed" flag: is the free block committed? 0 or 1
-				 *			- "matched_friends": array of friend names for which match exists
-				*/
-
 				let availabilities = {};
 				var key, count = 0;
-				var res, res2, end_time, start_time, start_date;
 
 				for(key in parsed_response) {
 					if(parsed_response.hasOwnProperty(key)) {
 						count++;
 					}
 
-					res = parsed_response[key]["startTime"].split(" ");
-					start_date = res[0];
-					start_time = res[1];
-
-					res2 = parsed_response[key]["endTime"].split(" ");
-					end_time = res2[1];
-
-					console.log(start_date)
-					console.log(start_time)
-
-					avail_id = parsed_response[key]["avail_ID"];
-					//console.log(avail_id)
-					availabilities[start_time] = avail_id;
-
-					this.state.items[start_date] = [];
-
-					this.state.items[start_date].push({
-						name: "Your availability: " + start_time + " - " + end_time,
-				        height: 50
-					});
-
+					console.log(parsed_response[key]["startTime"])
 				}
-				console.log(this.state.items)
-				// this.setState({
-				// 	items: availabilities
-				// })
-
+				//
 				console.log("Number of availabilities: ", count);
 
 				// this.setState({
@@ -226,8 +189,7 @@ class HomeScreen extends React.Component {
       <Agenda
         items={this.state.items}
         loadItemsForMonth={this.loadItems.bind(this)}
-        // selected={'2018-04-16'}
-		selected={Date()}
+        selected={'2018-04-16'}
         renderItem={this.renderItem.bind(this)}
         renderEmptyDate={this.renderEmptyDate.bind(this)}
         rowHasChanged={this.rowHasChanged.bind(this)}
@@ -275,22 +237,23 @@ class HomeScreen extends React.Component {
 
   loadItems(day) {
     setTimeout(() => {
-      // for (let i = -15; i < 85; i++) {
-      //   const time = day.timestamp + i * 24 * 60 * 60 * 1000;
-		// const strTime = this.timeToString(time);
-      //   if (!this.state.items[strTime]) {
-      //     this.state.items[strTime] = [];
-      //     const numItems = Math.floor(Math.random() * 5);
-	  //
-      //     for (let j = 0; j < numItems; j++) {
-      //       this.state.items[strTime].push({
-      //         name: 'Availability ' + strTime,
-      //         height: Math.max(50, Math.floor(Math.random() * 150))
-      //       });
-      //     }
-	  //
-		// }
-      // }
+      for (let i = -15; i < 85; i++) {
+        const time = day.timestamp + i * 24 * 60 * 60 * 1000;
+		const strTime = this.timeToString(time);
+		console.log(strTime);
+        if (!this.state.items[strTime]) {
+          this.state.items[strTime] = [];
+          const numItems = Math.floor(Math.random() * 5);
+
+          for (let j = 0; j < numItems; j++) {
+            this.state.items[strTime].push({
+              name: 'Availability ' + strTime,
+              height: Math.max(50, Math.floor(Math.random() * 150))
+            });
+          }
+
+		}
+      }
       //console.log(this.state.items);
       const newItems = {};
       Object.keys(this.state.items).forEach(key => {newItems[key] = this.state.items[key];});

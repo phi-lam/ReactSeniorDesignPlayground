@@ -12,25 +12,9 @@ import DatePicker from 'react-native-datepicker';
 import store from 'react-native-simple-store';
 import { Calendar, CalendarList, Agenda } from 'react-native-calendars';
 
-/* TODO Apr 26:
- *	- When asking for freeblocks for home screen, need server to give me:
- *			- "committed" flag: is the free block committed? 0 or 1
- *			- "matched_friends": array of friend names for which match exists
- */
-
-/* Frontend TODO:
- * - scale the block height-wise to intuitively convey how much time it takes up
- * 		-
- * - Should top-align the box with the date on the left, not bottom-align
- *		- Do we intuitively convey gaps between free blocks?
- *		- OR: remove implication of height with timespan altogether
- * - separate screen to show details of all matched friends?
- * - hover to show all matched friends?
- * -
- * - omit end time: anonymity and unnecessary
- * - how much tolerance for varying start times? 5 minutes? 15 minutes?
- */
-
+/* TODO:
+ *	- retrieve my availabilities, and then display in calendar view
+ * /
 
 /* TODO:
  *		- ensure userid is initialized (logged in) before allowing access to Home
@@ -150,57 +134,10 @@ class HomeScreen extends React.Component {
 	async componentDidMount() {
 		let userid = await store.get('USERID');
 		console.log("USERID: ", userid);
-		return fetch(`http://students.engr.scu.edu/~bbutton/SDW/retrieveclickdata.php?table=freeblock&userid=${userid}`)
+		return fetch(`http://students.engr.scu.edu/~bbutton/SDW/retrieveclickdata.php?table=freeblock`)
 			.then((responseJson) => {
-				let parsed_response = JSON.parse(responseJson._bodyText);
-				// console.log(responseJson);
-				// console.log("-----------")
-				console.log(parsed_response)
-
-				/* TODO Apr 26:
-				 *	- When asking for freeblocks for home screen, need server to give me:
-				 *			- "committed" flag: is the free block committed? 0 or 1
-				 *			- "matched_friends": array of friend names for which match exists
-				*/
-
-				let availabilities = {};
-				var key, count = 0;
-				var res, res2, end_time, start_time, start_date;
-
-				for(key in parsed_response) {
-					if(parsed_response.hasOwnProperty(key)) {
-						count++;
-					}
-
-					res = parsed_response[key]["startTime"].split(" ");
-					start_date = res[0];
-					start_time = res[1];
-
-					res2 = parsed_response[key]["endTime"].split(" ");
-					end_time = res2[1];
-
-					console.log(start_date)
-					console.log(start_time)
-
-					avail_id = parsed_response[key]["avail_ID"];
-					//console.log(avail_id)
-					availabilities[start_time] = avail_id;
-
-					this.state.items[start_date] = [];
-
-					this.state.items[start_date].push({
-						name: "Your availability: " + start_time + " - " + end_time,
-				        height: 50
-					});
-
-				}
-				console.log(this.state.items)
-				// this.setState({
-				// 	items: availabilities
-				// })
-
-				console.log("Number of availabilities: ", count);
-
+				//var availabilities = JSON.parse(responseJson._bodyText).data;
+				console.log(responseJson);
 				// this.setState({
 				// 	// isLoading: false,
 				// 	// dataSource: availabilities,
@@ -226,8 +163,7 @@ class HomeScreen extends React.Component {
       <Agenda
         items={this.state.items}
         loadItemsForMonth={this.loadItems.bind(this)}
-        // selected={'2018-04-16'}
-		selected={Date()}
+        selected={'2018-04-16'}
         renderItem={this.renderItem.bind(this)}
         renderEmptyDate={this.renderEmptyDate.bind(this)}
         rowHasChanged={this.rowHasChanged.bind(this)}
@@ -275,22 +211,21 @@ class HomeScreen extends React.Component {
 
   loadItems(day) {
     setTimeout(() => {
-      // for (let i = -15; i < 85; i++) {
-      //   const time = day.timestamp + i * 24 * 60 * 60 * 1000;
-		// const strTime = this.timeToString(time);
-      //   if (!this.state.items[strTime]) {
-      //     this.state.items[strTime] = [];
-      //     const numItems = Math.floor(Math.random() * 5);
-	  //
-      //     for (let j = 0; j < numItems; j++) {
-      //       this.state.items[strTime].push({
-      //         name: 'Availability ' + strTime,
-      //         height: Math.max(50, Math.floor(Math.random() * 150))
-      //       });
-      //     }
-	  //
-		// }
-      // }
+      for (let i = -15; i < 85; i++) {
+        const time = day.timestamp + i * 24 * 60 * 60 * 1000;
+		const strTime = this.timeToString(time);
+		console.log(strTime);
+        if (!this.state.items[strTime]) {
+          this.state.items[strTime] = [];
+          const numItems = Math.floor(Math.random() * 5);
+          for (let j = 0; j < numItems; j++) {
+            this.state.items[strTime].push({
+              name: 'Availability ' + strTime,
+              height: Math.max(50, Math.floor(Math.random() * 150))
+            });
+          }
+        }
+      }
       //console.log(this.state.items);
       const newItems = {};
       Object.keys(this.state.items).forEach(key => {newItems[key] = this.state.items[key];});
@@ -319,11 +254,72 @@ class HomeScreen extends React.Component {
 
   timeToString(time) {
     const date = new Date(time);
-    return date.toISOString().split('T')[0]; //date of time
-	//return date.toISOString().split('T')[1]; //timestamp
+    return date.toISOString().split('T')[0];
   }
 }
 
+// class HomeScreen extends React.Component {
+//   static navigationOptions = {
+//     title: 'Welcome',
+//   };
+//
+//   constructor(props){
+// 	  super(props)
+// 	  this.state = {
+// 		  items: {'2018-04-16': [{text: 'item 1 - any js object'}]},
+// 		  isLoggedIn: 1,
+// 		  userid: this.props.navigation.params
+// 	  };
+//
+//
+//   }
+//
+//   componentDidMount() {
+// 	  store.get('USERID')
+// 	  .then((loginID) => {
+// 	  		this.setState({
+// 		  		userid: loginID
+// 	  		})
+// 		})
+//   }
+//
+//   render() {
+//     const { navigate } = this.props.navigation;
+// 	console.log('Home userid (from state):', this.state.userid);
+//     return (
+// 		<View style={styles.container}>
+// 			<View style={styles.buttonContainer}>
+// 				<Button
+// 				  onPress={() => {
+//
+// 				  }}
+// 				  title="Add Availability"
+// 				  onPress={() =>
+// 				  	navigate('Profile', {
+// 						userid: this.state.userid
+// 					})
+// 				}
+// 				/>
+// 				<Button
+// 				  onPress={() => {
+//
+// 				  }}
+// 				  title="See Matches"
+// 				  onPress={() =>
+// 					navigate('Matches', {
+// 						userid: this.state.userid
+// 					})
+// 				}
+// 				/>
+// 			</View>
+// 			<View style={styles.container}>
+// 				<Text>Click the button above to add availabilities!</Text>
+// 			</View>
+// 		</View>
+//
+//     );
+//   }
+// }
 
 { /**** Class: Matches Screen *********************
 		This class pings the server for matches and displays them to the user
@@ -391,13 +387,37 @@ class MatchesScreen extends React.Component {
 					isLoading: false,
 					dataSource: availabilities,
 				});
-
 				// Alert.alert(availabilities);
 				// console.log(availabilities.data);
 			})
 			.catch((error) => {
 				console.error(error);
 			});
+		//
+		// AsyncStorage.setItem('MATCHES', availabilities);
+		// store.save('MATCHES', availabilities);
+
+		/* Dummy API GET Call */
+		// return fetch(`https://reqres.in/api/users?page=2`)
+		// 	.then((response) => response.json())
+		// 	.then((responseJson) => {
+		// 		console.log(responseJson);
+		// 		this.setState({
+		// 			isLoading: false,
+		// 			dataSource: responseJson.data,
+		// 		});
+		// 		//Alert.alert(responseJson.data);
+		// 		console.log(responseJson.data);
+		// 	})
+		// 	.catch((error) => {
+		// 		console.error(error);
+		// 	});
+
+
+		/*store.save('MATCHES', responseJson._bodyText)
+		.then((matches) => {
+			this.setState({ isLoading: false});
+		});*/
 
 	}
 
@@ -795,8 +815,3 @@ const styles = StyleSheet.create({
  * 		- send userID in POST requests
  *			- pass userID as parameter between components?
  *			- async storage of User data instead of passing around components as param */
-
-
- /* (done)
-  *	- retrieve my availabilities, and then display in calendar view
-  */
