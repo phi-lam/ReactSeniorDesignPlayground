@@ -15,7 +15,7 @@ import { Calendar, CalendarList, Agenda } from 'react-native-calendars';
 /* TODO: Presentation
  *	- Cleanup data and database
  *	-
- * /
+ * / 
 
 /* TODO Apr 26:
  *	- When asking for freeblocks for home screen, need server to give me:
@@ -58,95 +58,14 @@ function isEmpty(obj) {
 	return true;
 }
 
-/* HACK: only handles the cases we know we'll encounter */
+/* TODO: not that important, but reformat the time */
 function formatTime(time)
 {
-	var isAM = true;
-	var out_time = "";
-	var arr = time.split(":");
-	//console.log(arr)
+	var arr = time.strip(":")
 	if (arr.length == 3) { // Case 1: HH:MM:SS
-		if (arr[0] == "00")
-			isAM = true;
-		if (arr[0] > 12) {
-			isAM = false;
-			out_time += parseInt(arr[0]) - 12;
 
-		} else {
-			out_time += parseInt(arr[0])
-		}
-
-		if (isAM)
-			return out_time + ":" + arr[1] + " AM";
-		else
-			return out_time + ":" + arr[1] + " PM";
-	} else {
-		return time;
 	}
-}
 
-function formatDate(date, year=false)
-{
-	/* Format of 'date' param: YYYY-MM-DD */
-	var out_date = "";
-	var arr = date.split("-");
-	// console.log(arr)
-	// console.log(arr[2][1])
-	if (arr.length == 3) {
-
-		/* Convert numeric month to text month */
-		switch (arr[1]) {
-			case "01":
-				out_date += "Jan";
-				break;
-			case "02":
-				out_date += "Feb";
-				break;
-			case "03":
-				out_date += "Mar";
-				break;
-			case "04":
-				out_date += "Apr";
-				break;
-			case "05":
-				out_date += "May";
-				break;
-			case "06":
-				out_date += "Jun";
-				break;
-			case "07":
-				out_date += "Jul";
-				break;
-			case "08":
-				out_date += "Aug";
-				break;
-			case "09":
-				out_date += "Sep";
-				break;
-			case "10":
-				out_date += "Oct";
-				break;
-			case "11":
-				out_date += "Nov";
-				break;
-			case "12":
-				out_date += "Dec";
-				break;
-			default:
-				out_date += arr[1];
-		}
-
-		/* If date has a single-digit month, strip the leading 0 */
-		if (parseInt(arr[2]) < 10)
-			out_date += " " + arr[2][1];
-		else
-			out_date += " " + arr[2];
-
-		/* Tag the year at the end */
-		if (year == true)
-			out_date += ", " + arr[0];
-	}
-	return out_date;
 }
 
 /*	Function: logIn()
@@ -201,7 +120,7 @@ class LoginScreen extends React.Component {
 	render() {
 		const { navigate } = this.props.navigation;
 		return (
-			<View style={styles.containerHori}>
+			<View style={styles.container}>
 				<View style={styles.buttonContainerVert}>
 					<Button
 						onPress={() => {
@@ -251,15 +170,15 @@ class HomeScreen extends React.Component {
     };
   }
 
-  	async fetchAvailabilities() {
+	async componentDidMount() {
 		let userid = await store.get('USERID');
-		console.log("retrieveAvailabilities() - USERID: ", userid);
+		console.log("USERID: ", userid);
 		return fetch(`http://students.engr.scu.edu/~bbutton/SDW/retrieveclickdata.php?table=freeblock&userid=${userid}`)
 			.then((responseJson) => {
 				let parsed_response = JSON.parse(responseJson._bodyText);
 				// console.log(responseJson);
 				// console.log("-----------")
-				console.log("PARSED RESPONSE\n", parsed_response, "\n")
+				console.log(parsed_response)
 
 				/* TODO Apr 26:
 				 *	- When asking for freeblocks for home screen, need server to give me:
@@ -274,7 +193,6 @@ class HomeScreen extends React.Component {
 
 				for(key in parsed_response) {
 					if(parsed_response.hasOwnProperty(key)) {
-						console.log("key: ", key)
 						count++;
 					}
 
@@ -285,28 +203,34 @@ class HomeScreen extends React.Component {
 					res2 = parsed_response[key]["endTime"].split(" ");
 					end_time = res2[1];
 
-					// console.log(start_date)
-					// console.log(start_time)
+					console.log(start_date)
+					console.log(start_time)
 
 					avail_id = parsed_response[key]["avail_ID"];
 					//console.log(avail_id)
 					availabilities[start_time] = avail_id;
 
-					if(isEmpty(this.state.items))
-						this.state.items[start_date] = [];
-					else if (isEmpty(this.state.items[start_date]))
-						this.state.items[start_date] = [];
+					this.state.items[start_date] = [];
 
 					this.state.items[start_date].push({
-						name: formatDate(start_date) + ": " + formatTime(start_time) + " - " + formatTime(end_time),
+						name: "Your availability: " + start_time + " - " + end_time,
 				        height: 50
 					});
-					console.log("THIS.STATE.ITEMS\n", this.state.items, "\n")
 
 				}
+				console.log(this.state.items)
+				// this.setState({
+				// 	items: availabilities
+				// })
 
-				console.log("THIS.STATE.ITEMS\n", this.state.items, "\n")
 				console.log("Number of availabilities: ", count);
+
+				// this.setState({
+				// 	// isLoading: false,
+				// 	// dataSource: availabilities,
+				// });
+				// Alert.alert(availabilities);
+				// console.log(availabilities.data);
 			})
 			.catch((error) => {
 				console.error(error);
@@ -319,13 +243,8 @@ class HomeScreen extends React.Component {
 			// })
 	}
 
-	componentDidMount() {
-			this.fetchAvailabilities();
-	}
-
   render() {
 	const { navigate } = this.props.navigation;
-	// this.retrieveAvailabilities();
     return (
 	<View style = {styles.MainContainer}>
       <Agenda
@@ -348,9 +267,7 @@ class HomeScreen extends React.Component {
         //    '2017-05-26': {endingDay: true, color: 'gray'}}}
          // monthFormat={'yyyy'}
         //theme={{calendarBackground: 'red', agendaKnobColor: 'green'}}
-		//theme={{}}
         //renderDay={(day, item) => (<Text>{day ? day.day: 'item'}</Text>)}
-		// renderDay={(day, item) => (<Text style={styles.day}>{day ? day.day: ''}</Text>)}
       />
 		<View style={styles.buttonContainer}>
 				<Button
@@ -360,8 +277,7 @@ class HomeScreen extends React.Component {
 				  title="Add Availability"
 				  onPress={() =>
 				  	navigate('Profile', {
-						userid: this.state.userid,
-						onGoBack: () => this.fetchAvailabilities(),
+						userid: this.state.userid
 					})
 				}
 				/>
@@ -477,6 +393,7 @@ class MatchesScreen extends React.Component {
 
 	async componentDidMount() {
 		/* Create form data, then add to body of POST request */
+
 		let userid = await store.get('USERID')
 		console.log('See Matches - userid', userid)
 		let formData = new FormData();
@@ -488,6 +405,7 @@ class MatchesScreen extends React.Component {
 		//
 		// console.log('formData - ', formData);
 		// console.log('Retrieve matches -', userid);
+
 
 		/* For some reason, having the content-type header causes a crash on android */
 
@@ -572,8 +490,7 @@ class MatchesScreen extends React.Component {
 						time: start_time,
 				        friends: matches
 					});
-					console.log("Date: ", start_date)
-					console.log("Time: ", start_time)
+
 					console.log("\n Push attempt: ", matches)
 				}
 				if (count == 0) {
@@ -612,34 +529,19 @@ class MatchesScreen extends React.Component {
 
 	/* Set Sectionheaders based on dates */
 	populateSections(matches_obj) {
-		console.log("\n populateSections() \n", matches_obj)
+	//	console.log("\n populateSections() \n", matches_obj)
 		var key, i = 0;
 		let sections = [];
 		for (key in matches_obj) {
-			// let time = matches_obj[key][i]["time"];
-			let time = matches_obj[key]["time"];
+			let time = matches_obj[key][i]["time"];
 			//time = formatTime(time);
 
-			// for (i = 0; i < matches_obj[key].length; i++) {
-			// 	sections.unshift({
-			// 		title: key + ", " + time,
-			// 		data: matches_obj[key][i]["friends"],
-			// 	});
-			// }
-
-
-			/* HACK: GETTING EVERYTHING TO DISPLAY ON ONE LINE IS WACK */
-
-			var temp = []
 			for (i = 0; i < matches_obj[key].length; i++) {
-				temp.push(formatTime(matches_obj[key][i]["time"]) + " - " + matches_obj[key][i]["friends"])
+				sections.unshift({
+					title: key + ", " + time,
+					data: matches_obj[key][i]["friends"],
+				});
 			}
-			//temp.push("")
-			sections.push({
-					title: formatDate(key, true),
-					data: temp,
-			});
-			/* HACK: FURTHER WACK PROCEDURE TO DISPLAY ON ONE LINE */
 		}
 
 		console.log("\n populateSections() OUTPUT: \n", sections)
@@ -758,22 +660,11 @@ class ProfileScreen extends React.Component {
 			console.log('formData - ', formData);
 
 			/* POST request to save free block */
-			// fetch('http://students.engr.scu.edu/~bbutton/SDW/saveclickdata.php', {
-			// 	method: 'POST',
-			// 	headers: new Headers({
-			// 		'Content-Type': 'application/x-www-form-urlencoded', // <-- Specifying the Content-Type
-			// 	  }),
-			// 	body: formData
-			// 		/* TODO: blacklist and friend list
-			// 		blacklist: [
-			// 		]
-			// 		friend: [
-			// 		]
-			// 	}) // <-- Post parameters */
-			//
-			// })
 			fetch('http://students.engr.scu.edu/~bbutton/SDW/saveclickdata.php', {
 				method: 'POST',
+				headers: new Headers({
+					'Content-Type': 'application/x-www-form-urlencoded', // <-- Specifying the Content-Type
+				  }),
 				body: formData
 					/* TODO: blacklist and friend list
 					blacklist: [
@@ -781,17 +672,17 @@ class ProfileScreen extends React.Component {
 					friend: [
 					]
 				}) // <-- Post parameters */
+
 			})
 			.then((response) => response.text())
-			// .then((responseText) => {
-			//   alert(responseText);
-			// })
+			.then((responseText) => {
+			  alert(responseText);
+			})
 			.catch((error) => {
 			    console.error(error);
 			});
 			Alert.alert('Availability added!');
-			// console.log(userid);
-			// this.props.navigation.state.params.componentDidMount();
+			console.log(userid);
 		}
 	}
 
@@ -804,7 +695,7 @@ class ProfileScreen extends React.Component {
 
 	render(){
 	    return (
-			<View style={styles.containerHori}>
+			<View style={styles.container}>
 		    {/*   <DatePicker
 		          style={{width: 300}}
 		          date={this.state.date1}
@@ -847,10 +738,7 @@ class ProfileScreen extends React.Component {
 					}
 				  }}
 				  minuteInterval={10}
-				  onDateChange={(date) => {this.setState({
-					  		time1: date,
-							time2: date });
-						}}
+				  onDateChange={(date) => {this.setState({time1: date});}}
 				/>
 				<DatePicker
 				  style={{width: 300}}
@@ -873,10 +761,10 @@ class ProfileScreen extends React.Component {
 				  minuteInterval={10}
 				  onDateChange={(date) => {this.setState({time2: date});}}
 				/>
-				<Text style={styles.SectionListItemStyle}></Text>
+				<Text style={styles.instructions}></Text>
 			{/*<Text style={styles.instructions}>Selected Date: {this.state.date}</Text>*/}
-				<Text style={styles.SectionListItemStyle}>Start time: {this.state.time1}</Text>
-				<Text style={styles.SectionListItemStyle}>End time: {this.state.time2}</Text>
+				<Text style={styles.instructions}>Start time: {this.state.time1}</Text>
+				<Text style={styles.instructions}>End time: {this.state.time2}</Text>
 
 				<View style={styles.buttonContainer}>
 					<Button
@@ -920,31 +808,6 @@ export default class App extends React.Component {
 
 
 const styles = StyleSheet.create({
-
-	// container: {
-	//   flexDirection: 'row'
-	// },
-	// dayNum: {
-	//   fontSize: 28,
-	//   fontWeight: '200',
-	//   color: appStyle.agendaDayNumColor
-	// },
-	// dayText: {
-	//   fontSize: 14,
-	//   fontWeight: '300',
-	//   color: appStyle.agendaDayTextColor,
-	//   marginTop: -5,
-	//   backgroundColor: 'rgba(0,0,0,0)'
-	// },
-	// day: {
-	//   width: 63,
-	//   alignItems: 'center',
-	//   justifyContent: 'flex-start',
-	//   marginTop: 32
-	// },
-	// today: {
-	//   color: appStyle.agendaTodayColor
-	// },
 	SectionHeaderStyle:{
 	  backgroundColor: '#F5F5F5',
 	  fontSize: 18,
@@ -953,7 +816,7 @@ const styles = StyleSheet.create({
 	},
 
 	SectionListItemStyle:{
-	  fontSize: 14,
+	  fontSize: 15,
 	  padding: 5,
 	  color: '#000',
 	  backgroundColor : '#FFF'
@@ -966,7 +829,7 @@ const styles = StyleSheet.create({
 	  fontSize: 20,
 	  fontWeight: 'bold',
 	},
-	containerHori: {
+	container: {
 		flex: 1,
 		backgroundColor: '#fff',
 		alignItems: 'center',
