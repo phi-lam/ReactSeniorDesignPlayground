@@ -14,7 +14,7 @@ import { Calendar, CalendarList, Agenda } from 'react-native-calendars';
 
 /* TODO: Presentation
  *	- Cleanup data and database
- *	-
+ *	- Confusing to go back to after login
  * /
 
 /* TODO Apr 26:
@@ -49,6 +49,11 @@ import { Calendar, CalendarList, Agenda } from 'react-native-calendars';
   *		- Continue to clean up app
   */
 
+/* HELPER FUNCTIONS
+	- isEmpty(obj)
+	- formatTime(time)
+	- formatDate(date, year)
+*/
 
 function isEmpty(obj) {
 	for (var key in obj) {
@@ -68,6 +73,9 @@ function formatTime(time)
 	if (arr.length == 3) { // Case 1: HH:MM:SS
 		if (arr[0] == "00")
 			isAM = true;
+		if (arr[0] == 12)
+			isAM = false;
+
 		if (arr[0] > 12) {
 			isAM = false;
 			out_time += parseInt(arr[0]) - 12;
@@ -188,7 +196,6 @@ async function logIn() {
   }
 }
 
-
 class LoginScreen extends React.Component {
 	constructor(props){
 		super(props)
@@ -212,10 +219,10 @@ class LoginScreen extends React.Component {
 							logIn()
 							.then((loginID) => {
 								console.log('loginID - ', loginID)
-								this.setState({
-									userid: loginID,
-									isLoggedIn: true,
-								})
+								// this.setState({
+								// 	userid: loginID,
+								// 	isLoggedIn: true,
+								// })
 							})
 
 						} }
@@ -224,7 +231,7 @@ class LoginScreen extends React.Component {
 					  onPress={() => {
 
 					  }}
-					  title="Go To Home"
+					  title="Go To Homepage"
 					  onPress={() =>
 						store.get('USERID')
 						.then((loginID) =>
@@ -320,7 +327,7 @@ class HomeScreen extends React.Component {
 	}
 
 	componentDidMount() {
-			this.fetchAvailabilities();
+		this.fetchAvailabilities();
 	}
 
   render() {
@@ -432,15 +439,15 @@ class HomeScreen extends React.Component {
   }
 }
 
-
-{ /**** Class: Matches Screen *********************
+/* *** Class: Matches Screen *********************
 		This class pings the server for matches and displays them to the user
 		* TODO:
 		* 	- After pinging server, make separate function for parsing the
 		*		data to better display it.
 		*	- Sort matches by date
-  */
-}
+		*		- RESOLVED: backend sorts everything
+*/
+
 
 class MatchesScreen extends React.Component {
 	constructor(props) {
@@ -478,13 +485,13 @@ class MatchesScreen extends React.Component {
 	async componentDidMount() {
 		/* Create form data, then add to body of POST request */
 		let userid = await store.get('USERID')
-		console.log('See Matches - userid', userid)
+		// console.log('See Matches - userid', userid)
 		let formData = new FormData();
-		console.log("created formdata object")
+		// console.log("created formdata object")
 		let dummy_pw = 'password';
 		let dummy_user = 'Phi';
 		formData.append('userid', userid)
-		console.log('formdata success')
+		// console.log('formdata success')
 		//
 		// console.log('formData - ', formData);
 		// console.log('Retrieve matches -', userid);
@@ -503,13 +510,13 @@ class MatchesScreen extends React.Component {
 			body: formData
 		})
 			.then((responseJson) => {
-				console.log(responseJson);
+				// console.log(responseJson);
 				let parsed_response = JSON.parse(responseJson._bodyText);
 
 				//TeMP TEST
 				//let parsed_response = responseJson._bodyText;
 				// console.log("-----------")
-				console.log(parsed_response)
+				// console.log(parsed_response)
 
 				/* TODO Apr 26:
 				 *	- When asking for freeblocks for home screen, need server to give me:
@@ -572,26 +579,26 @@ class MatchesScreen extends React.Component {
 						time: start_time,
 				        friends: matches
 					});
-					console.log("Date: ", start_date)
-					console.log("Time: ", start_time)
-					console.log("\n Push attempt: ", matches)
+					// console.log("Date: ", start_date)
+					// console.log("Time: ", start_time)
+					// console.log("\n Push attempt: ", matches)
 				}
 				if (count == 0) {
 					this.setState({
 						noMatches: true
 					});
-					console.log("--- noMatches: true")
+					// console.log("--- noMatches: true")
 				}
 				else {
 					this.setState({
 						noMatches: false
 					});
-					console.log("--- noMatches: false")
+					// console.log("--- noMatches: false")
 				}
 
 
-				console.log("\n***** FINAL MATCH LIST *****")
-				console.log(this.state.match_list)
+				// console.log("\n***** FINAL MATCH LIST *****")
+				// console.log(this.state.match_list)
 
 				this.setState({
 				 	isLoading: false,
@@ -627,19 +634,17 @@ class MatchesScreen extends React.Component {
 			// 	});
 			// }
 
-
-			/* HACK: GETTING EVERYTHING TO DISPLAY ON ONE LINE IS WACK */
-
+			// NOTE:this code is supposed to break display: var temp = matches_obj[key][0]["time"] + " - " + matches_obj[key][0]["friends"];
+			// NOTE: SectionList won't do char by char if it gets an array (versus a string)
 			var temp = []
 			for (i = 0; i < matches_obj[key].length; i++) {
 				temp.push(formatTime(matches_obj[key][i]["time"]) + " - " + matches_obj[key][i]["friends"])
 			}
-			//temp.push("")
+			// temp.push("")
 			sections.push({
 					title: formatDate(key, true),
 					data: temp,
 			});
-			/* HACK: FURTHER WACK PROCEDURE TO DISPLAY ON ONE LINE */
 		}
 
 		console.log("\n populateSections() OUTPUT: \n", sections)
@@ -667,8 +672,7 @@ class MatchesScreen extends React.Component {
 
 		//console.log("source data for SectionList - ", this.state.match_list);
 
-// sections={[ {title: 'May 15, 2018', data: 'Big Boy Benji' }, }
-
+		// sections={[ {title: 'May 15, 2018', data: 'Big Boy Benji' }, }
 		if (this.state.noMatches == true) {
 			return (
 				<Text style={styles.SectionListItemStyle}> No matches yet! </Text>
@@ -852,6 +856,8 @@ class ProfileScreen extends React.Component {
 							time2: date });
 						}}
 				/>
+				<Text style={styles.SectionListItemStyle}>Start time: {this.state.time1}</Text>
+
 				<DatePicker
 				  style={{width: 300}}
 				  date={this.state.time2}
@@ -873,9 +879,8 @@ class ProfileScreen extends React.Component {
 				  minuteInterval={10}
 				  onDateChange={(date) => {this.setState({time2: date});}}
 				/>
-				<Text style={styles.SectionListItemStyle}></Text>
+			{/*	<Text style={styles.SectionListItemStyle}></Text> */}
 			{/*<Text style={styles.instructions}>Selected Date: {this.state.date}</Text>*/}
-				<Text style={styles.SectionListItemStyle}>Start time: {this.state.time1}</Text>
 				<Text style={styles.SectionListItemStyle}>End time: {this.state.time2}</Text>
 
 				<View style={styles.buttonContainer}>
